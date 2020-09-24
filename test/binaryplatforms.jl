@@ -136,6 +136,13 @@ end
 
     # Test that trying to set illegal tags fails
     @test_throws ArgumentError p["os"] = "a+b"
+
+    # Test that our `hash()` is stable
+    @test hash(HostPlatform()) == hash(HostPlatform())
+
+    # Test that round-tripping through `triplet` for a HostPlatform does not
+    # maintain equality, as we end up losing the `compare_strategies`:
+    @test parse(Platform, triplet(HostPlatform())) != HostPlatform()
 end
 
 @testset "Triplet parsing" begin
