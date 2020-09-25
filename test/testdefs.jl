@@ -15,14 +15,26 @@ function runtests(name, path, isolate=true; seed=nothing)
             m = Main
         end
         @eval(m, using Test, Random)
+        @eval(m, import Pkg)
         let id = myid()
             wait(@spawnat 1 print_testworker_started(name, id))
+        end
+        run_tests = if startswith(path, Sys.STDLIB)
+            env = dirname(dirname(path))
+            quote
+                Pkg.activate($env)
+                Pkg.test($name)
+            end
+        else
+            quote
+                include($"$path.jl")
+            end
         end
         ex = quote
             @timed @testset $"$name" begin
                 # Random.seed!(nothing) will fail
                 $seed != nothing && Random.seed!($seed)
-                include($"$path.jl")
+                $run_tests
             end
         end
         res_and_time_data = Core.eval(m, ex)
